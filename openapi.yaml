@@ -1,0 +1,16 @@
+openapi: 3.0.1
+info:
+  title: Tornado Tutorial
+  version: 0.0.0
+paths:
+  /:
+    get:
+      description: Returns "Hello, World"
+      responses:
+        200:
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Hello, World"

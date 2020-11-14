@@ -1,0 +1,3 @@
+tornado==6.1
+# used in setup.py
+PyYAML==5.3.1
