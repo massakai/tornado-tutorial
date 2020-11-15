@@ -5,7 +5,7 @@ import yaml
 
 def get_version():
     with open("./openapi.yaml") as f:
-        return yaml.load(f)["info"]["version"]
+        return yaml.safe_load(f)["info"]["version"]
 
 
 setup(
