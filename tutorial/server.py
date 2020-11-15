@@ -12,6 +12,7 @@ class UrlsHandler(tornado.web.RequestHandler):
                 "url": "https://raw.githubusercontent.com/massakai/tornado-tutorial/master/openapi.yaml",
             }
         ])
+        self.set_header("Content-Type", "application/json")
         self.write(js + "\n")
 
 
