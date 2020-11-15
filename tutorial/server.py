@@ -2,9 +2,16 @@ import json
 
 import tornado.ioloop
 import tornado.web
+from prometheus_client import start_http_server, Histogram
+
+# bucketに含まれるリクエスト数がカウントされる(percentileは取得できない)
+LATENCY_HISTOGRAM = Histogram(name='request_latency_seconds', documentation='Description of histogram',
+                              labelnames=('method', 'path'))
 
 
 class UrlsHandler(tornado.web.RequestHandler):
+
+    @LATENCY_HISTOGRAM.labels('GET', '/urls').rate()
     def get(self):
         js = json.dumps([
             {
@@ -23,6 +30,9 @@ def make_app():
 
 
 def main():
+    # prometheus
+    start_http_server(8000)
+
     app = make_app()
     app.listen(8888)
     tornado.ioloop.IOLoop.current().start()

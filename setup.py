@@ -11,6 +11,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "tornado==6.1",
+        "prometheus_client==0.8.0",
     ],
     entry_points={
         'console_scripts': [
