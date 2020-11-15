@@ -3,14 +3,19 @@ info:
   title: Tornado Tutorial
   version: 0.0.0
 paths:
-  /:
+  /urls:
     get:
-      description: Returns "Hello, World"
       responses:
         200:
           description: OK
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                example: "Hello, World"
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    url:
+                      type: string

@@ -1,15 +1,23 @@
+import json
+
 import tornado.ioloop
 import tornado.web
 
 
-class MainHandler(tornado.web.RequestHandler):
+class UrlsHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write("Hello, world")
+        js = json.dumps([
+            {
+                "name": "Tornado Tutorial API",
+                "url": "https://raw.githubusercontent.com/massakai/tornado-tutorial/master/openapi.yaml",
+            }
+        ])
+        self.write(js + "\n")
 
 
 def make_app():
     return tornado.web.Application([
-        (r"/", MainHandler),
+        (r"/urls", UrlsHandler),
     ])
 
 
