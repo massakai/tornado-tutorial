@@ -11,5 +11,10 @@ setup(
     packages=find_packages(),
     install_requires=[
         "tornado==6.1",
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'tutorial_server = tutorial.server:main',
+        ],
+    },
 )
