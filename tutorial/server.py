@@ -3,9 +3,10 @@ from datetime import timedelta
 
 import tornado.ioloop
 import tornado.web
-from prometheus_client import start_http_server
+from prometheus_client.registry import REGISTRY
+from prometheus_client.exposition import choose_encoder
 
-from tutorial.metrics import SummaryWithQuantile, _SAMPLE_CLEANER
+from tutorial.metrics import SummaryWithQuantile
 
 # bucketに含まれるリクエスト数がカウントされる(percentileは取得できない)
 LATENCY_SUMMARY = SummaryWithQuantile(
@@ -27,16 +28,21 @@ class UrlsHandler(tornado.web.RequestHandler):
         self.write(js + "\n")
 
 
+class MetricsHandler(tornado.web.RequestHandler):
+    def get(self):
+        encoder, content_type = choose_encoder(self.request.headers.get('Accept'))
+        self.set_header('Content-Type', content_type)
+        self.write(encoder(REGISTRY))
+
+
 def make_app():
     return tornado.web.Application([
         (r"/urls", UrlsHandler),
+        (r"/prometheus", MetricsHandler)
     ])
 
 
 def main():
-    # prometheus
-    start_http_server(8000)
-
     app = make_app()
     app.listen(8888)
     tornado.ioloop.IOLoop.current().start()
