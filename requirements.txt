@@ -1,2 +1,3 @@
 tornado==6.1
 prometheus_client==0.8.0
+requests==2.25.0

@@ -64,3 +64,32 @@ request_latency_seconds{method="GET",path="/urls",period="60.0",quantile="0.999"
 # TYPE request_latency_seconds_created gauge
 request_latency_seconds_created{method="GET",path="/urls"} 1.605785234351844e+09
 ```
+
+## MinIO
+
+```bash
+# サーバー起動
+$ docker run -p 9000:9000 \
+  -e "MINIO_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE" \
+  -e "MINIO_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+  minio/minio server /data
+
+# エイリアスを設定
+$ mc alias set minio http://localhost:9000 AKIAIOSFODNN7EXAMPLE wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# バケット作成
+$ mc mb minio/data
+Bucket created successfully `minio/data`.
+
+# ACL設定
+$ mc policy set download minio/data
+Access permission for `minio/data` is set to `download`
+
+# アップロード
+$ mc cp openapi.yaml minio/data
+openapi.yaml:      449 B / 449 B  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  36.49 KiB/s 0s
+
+$ python tutorial/s3downloader.py
+Object(key='openapi.yaml', last_modified=datetime.datetime(2020, 11, 30, 10, 2, 56, 517000, tzinfo=datetime.timezone.utc))
+```
+
