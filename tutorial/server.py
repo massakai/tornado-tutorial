@@ -1,9 +1,11 @@
 import json
+import logging
+import random
 from datetime import timedelta
 
 import tornado.ioloop
 import tornado.web
-from prometheus_client.metrics import Histogram
+from prometheus_client.metrics import Counter, Histogram
 from prometheus_client.registry import REGISTRY
 from prometheus_client.exposition import choose_encoder
 
@@ -17,6 +19,19 @@ LATENCY_SUMMARY = SummaryWithQuantile(
 histogram = Histogram(name='http_server_requests_seconds',
                       documentation='Latency',
                       labelnames=('method', 'uri', 'status'))
+
+
+class LogLevelCountFilter(logging.Filter):
+    counter = Counter(
+        name='log_events',
+        documentation='Number of error level events that made it to the logs',
+        labelnames=('level',))
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        LogLevelCountFilter.counter.labels(
+            level=record.levelname
+        ).inc()
+        return True
 
 
 class MetricsHandler(tornado.web.RequestHandler):
@@ -42,18 +57,28 @@ class UrlsHandler(tornado.web.RequestHandler):
 
 
 class TestHandler(tornado.web.RequestHandler):
+
     def get(self) -> None:
-        self.write('OK')
+        self.set_status(random.choice([200, 400, 500]))
 
     def on_finish(self) -> None:
-        histogram.labels(
-            method=self.request.method,
-            uri=self.request.path,
-            status=int(self.get_status())
-        ).observe(self.request.request_time())
+        if self.get_status() == 200:
+            logging.info(
+                f'{self.request.method} {self.request.uri} {self.get_status()}')
+        elif self.get_status() == 400:
+            logging.warning(
+                f'{self.request.method} {self.request.uri} {self.get_status()}')
+        elif self.get_status() == 500:
+            logging.error(
+                f'{self.request.method} {self.request.uri} {self.get_status()}')
 
 
 def main():
+    logging.basicConfig()
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addFilter(LogLevelCountFilter())
+
     app = tornado.web.Application([
         (r'/test', TestHandler),
         (r'/metrics', MetricsHandler),
