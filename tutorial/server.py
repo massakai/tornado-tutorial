@@ -1,6 +1,8 @@
+import asyncio
 import json
 import logging
 import random
+import signal
 from datetime import timedelta
 
 import tornado.ioloop
@@ -73,7 +75,25 @@ class TestHandler(tornado.web.RequestHandler):
                 f'{self.request.method} {self.request.uri} {self.get_status()}')
 
 
+async def shutdown():
+    # リクエストを受けないようにする
+
+    # すべてのリクエストが完了するまで待つ
+    await asyncio.sleep(1)
+
+    # リソースの解放などの終了処理を実行する
+
+    tornado.ioloop.IOLoop.current().stop()
+
+
+def shutdown_handler(sig, frame):
+    tornado.ioloop.IOLoop.instance().add_callback_from_signal(shutdown)
+
+
 def main():
+    signal.signal(signal.SIGTERM, shutdown_handler)
+    signal.signal(signal.SIGINT, shutdown_handler)
+
     logging.basicConfig()
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
