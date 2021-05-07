@@ -76,17 +76,21 @@ class TestHandler(tornado.web.RequestHandler):
 
 
 async def shutdown():
-    # リクエストを受けないようにする
+    # リクエストを受けないようにする(readinessを落とすなど)
+    logging.info('Change status for maintenance.')
 
     # すべてのリクエストが完了するまで待つ
+    logging.info('Wait to complete requests.')
     await asyncio.sleep(1)
 
     # リソースの解放などの終了処理を実行する
+    logging.info('Release resources.')
 
     tornado.ioloop.IOLoop.current().stop()
 
 
 def shutdown_handler(sig, frame):
+    logging.debug(f'Add callback for shutdown by signal {sig}.')
     tornado.ioloop.IOLoop.instance().add_callback_from_signal(shutdown)
 
 
@@ -94,7 +98,7 @@ def main():
     signal.signal(signal.SIGTERM, shutdown_handler)
     signal.signal(signal.SIGINT, shutdown_handler)
 
-    logging.basicConfig()
+    logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logger.addFilter(LogLevelCountFilter())
