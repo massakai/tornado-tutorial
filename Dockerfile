@@ -1,4 +1,4 @@
-ARG PYTHOD_TAG=3.9.0-alpine
+ARG PYTHOD_TAG=3.9.5-slim
 FROM python:${PYTHOD_TAG} AS build-env
 # FROMの上に書くと読み込まれない
 ARG PACKAGE_PATH=/tmp/tornado-tutorial.tgz

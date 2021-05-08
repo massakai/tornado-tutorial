@@ -5,8 +5,12 @@ import random
 import signal
 from datetime import timedelta
 
+import oneagent
 import tornado.ioloop
 import tornado.web
+from oneagent import InitResult
+from oneagent.common import WebapplicationInfoHandle
+from oneagent.sdk.tracers import IncomingWebRequestTracer
 from prometheus_client.metrics import Counter, Histogram
 from prometheus_client.registry import REGISTRY
 from prometheus_client.exposition import choose_encoder
@@ -59,11 +63,36 @@ class UrlsHandler(tornado.web.RequestHandler):
 
 
 class TestHandler(tornado.web.RequestHandler):
+    web_app_info: WebapplicationInfoHandle
+    trace: IncomingWebRequestTracer
+
+    def initialize(self) -> None:
+        self.web_app_info = oneagent.get_sdk().create_web_application_info(
+            virtual_host='localhost',
+            application_id='TornadoTutorialApp',
+            context_root='/'
+        )
+
+    def prepare(self) -> None:
+        self.trace = oneagent.get_sdk().trace_incoming_web_request(
+            self.web_app_info,
+            self.request.full_url(),
+            self.request.method,
+            self.request.headers,
+            self.request.remote_ip,
+        )
+        # トレーシング開始
+        self.trace.start()
 
     def get(self) -> None:
         self.set_status(random.choice([200, 400, 500]))
 
     def on_finish(self) -> None:
+        self.trace.set_status_code(self.get_status())
+        # レスポンスヘッダを取得するIFがないので仕方なく非公開フィールドから取得する
+        self.trace.add_response_headers(self._headers)
+        self.trace.end()
+
         if self.get_status() == 200:
             logging.info(
                 f'{self.request.method} {self.request.uri} {self.get_status()}')
@@ -85,6 +114,7 @@ async def shutdown():
 
     # リソースの解放などの終了処理を実行する
     logging.info('Release resources.')
+    oneagent.shutdown()
 
     tornado.ioloop.IOLoop.current().stop()
 
@@ -102,6 +132,12 @@ def main():
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logger.addFilter(LogLevelCountFilter())
+
+    init_result = oneagent.initialize()
+    if init_result.status is not InitResult.STATUS_INITIALIZED:
+        logging.error(f'Error initializing OneAgent SDK. '
+                      f'status = {init_result.status}, '
+                      f'error = {init_result.error}')
 
     app = tornado.web.Application([
         (r'/test', TestHandler),
