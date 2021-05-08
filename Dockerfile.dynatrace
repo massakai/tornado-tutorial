@@ -1,0 +1,28 @@
+ARG PYTHOD_TAG=3.9.5-slim
+FROM python:${PYTHOD_TAG} AS build-env
+# FROMの上に書くと読み込まれない
+ARG PACKAGE_PATH=/tmp/tornado-tutorial.tgz
+COPY . /tmp/
+WORKDIR /tmp
+RUN python3 setup.py sdist
+RUN mv /tmp/dist/tornado-tutorial-*.tar.gz ${PACKAGE_PATH}
+
+FROM python:${PYTHOD_TAG}
+
+ARG ONEAGENT_INSTALLER_SCRIPT_URL
+ARG ONEAGENT_INSTALLER_DOWNLOAD_TOKEN
+RUN apt-get update && \
+    apt-get install -y wget && \
+    wget -O Dynatrace-OneAgent-Linux-1.215.163.sh "${ONEAGENT_INSTALLER_SCRIPT_URL}" --header="Authorization: Api-Token ${ONEAGENT_INSTALLER_DOWNLOAD_TOKEN}" && \
+    wget https://ca.dynatrace.com/dt-root.cert.pem ; ( echo 'Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha-256"; boundary="--SIGNED-INSTALLER"'; echo ; echo ; echo '----SIGNED-INSTALLER' ; cat Dynatrace-OneAgent-Linux-1.215.163.sh ) | openssl cms -verify -CAfile dt-root.cert.pem > /dev/null && \
+    /bin/sh Dynatrace-OneAgent-Linux-1.215.163.sh && \
+    rm Dynatrace-OneAgent-Linux-1.215.163.sh && \
+    apt remove -y --purge wget && \
+    apt clean -y
+
+# build-envと同じ変数, 値だが書く必要がある
+ARG PACKAGE_PATH=/tmp/tornado-tutorial.tgz
+COPY --from=build-env ${PACKAGE_PATH} ${PACKAGE_PATH}
+RUN pip install ${PACKAGE_PATH}
+
+ENTRYPOINT ["tutorial_server"]
