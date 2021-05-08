@@ -10,9 +10,9 @@ setup(
     url="https://github.com/massakai/tornado-tutorial",
     packages=find_packages(),
     install_requires=[
-        "tornado==6.1",
+        "oneagent-sdk==1.4.0.20210127.165413",
         "prometheus_client==0.8.0",
-        "requests==2.25.0",
+        "tornado==6.1",
     ],
     entry_points={
         'console_scripts': [
